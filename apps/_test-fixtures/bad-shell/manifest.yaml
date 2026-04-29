@@ -1,0 +1,41 @@
+# Test fixture: install[].shell: true is rejected.
+# yaml-language-server: $schema=../../../schema/appspec-v1.json
+
+schemaVersion: 1
+slug: bad-shell
+name: Shell-string install (forbidden)
+publisher: os8ai
+icon: ./icon.png
+category: dev-tools
+description: Should fail because install entry sets shell true.
+
+upstream:
+  git: https://github.com/example/example.git
+  ref: v1.0.0
+
+runtime:
+  kind: node
+  version: "20"
+  dependency_strategy: frozen
+
+install:
+  - argv: [sh]
+    shell: true
+
+start:
+  argv: [npm, start]
+
+surface:
+  kind: web
+
+permissions:
+  network:
+    outbound: true
+    inbound: false
+  filesystem: app-private
+
+legal:
+  license: MIT
+
+review:
+  channel: verified

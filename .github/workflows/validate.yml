@@ -1,0 +1,53 @@
+name: validate
+
+on:
+  pull_request:
+    paths:
+      - 'apps/**'
+      - 'schema/**'
+      - '.github/scripts/validate-manifests.js'
+      - 'package.json'
+      - 'package-lock.json'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/**'
+      - 'schema/**'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: validate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  schema:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Validate manifests
+        run: node .github/scripts/validate-manifests.js
+
+      - name: Run validator self-tests against fixtures
+        run: node .github/scripts/test-validate.js
+
+      - name: Upload validation report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: validation-report
+          path: validation-report.json
+          if-no-files-found: ignore

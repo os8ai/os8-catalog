@@ -1,0 +1,53 @@
+# Test fixture: minimal valid Vite manifest. Should PASS validation.
+# yaml-language-server: $schema=../../../schema/appspec-v1.json
+
+schemaVersion: 1
+slug: valid-vite
+name: Valid Vite Fixture
+publisher: os8ai
+icon: ./icon.png
+category: dev-tools
+description: Test fixture exercising the happy path for a Vite-based manifest.
+
+upstream:
+  git: https://github.com/example/example.git
+  ref: v1.0.0
+
+framework: vite
+
+runtime:
+  kind: node
+  version: "20"
+  package_manager: npm
+  dependency_strategy: frozen
+
+install:
+  - argv: [npm, ci]
+
+start:
+  argv: [npm, run, dev]
+  port: detect
+  readiness:
+    type: http
+    path: /
+    timeout_seconds: 30
+
+surface:
+  kind: web
+
+permissions:
+  network:
+    outbound: true
+    inbound: false
+  filesystem: app-private
+  os8_capabilities: []
+  secrets: []
+
+legal:
+  license: MIT
+  commercial_use: unrestricted
+
+review:
+  channel: verified
+  reviewed_at: "2026-04-28"
+  risk: low
