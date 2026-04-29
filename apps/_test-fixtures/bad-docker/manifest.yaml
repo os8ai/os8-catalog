@@ -1,0 +1,39 @@
+# Test fixture: runtime.kind = docker is rejected (v2 reserved).
+# yaml-language-server: $schema=../../../schema/appspec-v1.json
+
+schemaVersion: 1
+slug: bad-docker
+name: Docker (forbidden in v1)
+publisher: os8ai
+icon: ./icon.png
+category: dev-tools
+description: Should fail because runtime.kind is docker.
+
+upstream:
+  git: https://github.com/example/example.git
+  ref: v1.0.0
+
+runtime:
+  kind: docker
+  version: "20"
+
+install:
+  - argv: [docker, build, "."]
+
+start:
+  argv: [docker, run, "img"]
+
+surface:
+  kind: web
+
+permissions:
+  network:
+    outbound: true
+    inbound: false
+  filesystem: app-private
+
+legal:
+  license: MIT
+
+review:
+  channel: verified

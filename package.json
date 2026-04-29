@@ -1,0 +1,20 @@
+{
+  "name": "os8-catalog",
+  "version": "1.0.0",
+  "private": true,
+  "description": "OS8 App Store catalog — manifests and CI tooling.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "validate": "node .github/scripts/validate-manifests.js"
+  },
+  "dependencies": {
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1",
+    "glob": "^11.0.0",
+    "js-yaml": "^4.1.0",
+    "sharp": "^0.33.5"
+  }
+}

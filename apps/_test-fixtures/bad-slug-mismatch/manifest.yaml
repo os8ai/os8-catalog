@@ -1,0 +1,40 @@
+# Test fixture: folder name does not equal manifest.slug.
+# yaml-language-server: $schema=../../../schema/appspec-v1.json
+
+schemaVersion: 1
+slug: not-the-folder-name
+name: Slug mismatch fixture
+publisher: os8ai
+icon: ./icon.png
+category: dev-tools
+description: Folder is bad-slug-mismatch but slug is not-the-folder-name.
+
+upstream:
+  git: https://github.com/example/example.git
+  ref: v1.0.0
+
+runtime:
+  kind: node
+  version: "20"
+  dependency_strategy: frozen
+
+install:
+  - argv: [npm, ci]
+
+start:
+  argv: [npm, start]
+
+surface:
+  kind: web
+
+permissions:
+  network:
+    outbound: true
+    inbound: false
+  filesystem: app-private
+
+legal:
+  license: MIT
+
+review:
+  channel: verified
