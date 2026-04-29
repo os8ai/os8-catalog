@@ -45,6 +45,12 @@ const LOCKFILES_BY_MANAGER = {
 // but for explicit non-pip managers we only accept their own lockfile.
 const ALL_LOCKFILES = Object.values(LOCKFILES_BY_MANAGER).flat();
 
+// Skip any path under a folder whose name starts with `_` (e.g.
+// apps/_test-fixtures/bad-docker/manifest.yaml).
+function isFixturePath(p) {
+  return p.split(path.sep).some((seg) => seg.startsWith('_'));
+}
+
 function changedManifestPaths() {
   const baseSha = process.env.PR_BASE_SHA;
   const headSha = process.env.PR_HEAD_SHA;
@@ -52,10 +58,7 @@ function changedManifestPaths() {
     const all = spawnSync('git', ['ls-files', 'apps/*/manifest.yaml'], {
       cwd: REPO_ROOT, encoding: 'utf8',
     });
-    return all.stdout
-      .split('\n')
-      .filter(Boolean)
-      .filter((p) => !path.basename(path.dirname(p)).startsWith('_'));
+    return all.stdout.split('\n').filter(Boolean).filter((p) => !isFixturePath(p));
   }
   const diff = spawnSync(
     'git',
@@ -63,10 +66,7 @@ function changedManifestPaths() {
     { cwd: REPO_ROOT, encoding: 'utf8' }
   );
   if (diff.status !== 0) throw new Error(`git diff failed: ${diff.stderr}`);
-  return diff.stdout
-    .split('\n')
-    .filter(Boolean)
-    .filter((p) => !path.basename(path.dirname(p)).startsWith('_'));
+  return diff.stdout.split('\n').filter(Boolean).filter((p) => !isFixturePath(p));
 }
 
 async function gateOne(relPath) {

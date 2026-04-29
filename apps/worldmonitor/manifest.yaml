@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=../../schema/appspec-v1.json
+
+schemaVersion: 1
+slug: worldmonitor
+name: "World Monitor"
+publisher: koala73
+icon: ./icon.png
+screenshots:
+  - ./screenshots/01-overview.png
+category: intelligence
+description: >-
+  Real-time global intelligence dashboard. AI-powered news aggregation,
+  geopolitical monitoring, and infrastructure tracking on an interactive
+  3D globe.
+
+upstream:
+  git: https://github.com/koala73/worldmonitor.git
+  ref: v2.5.23
+
+framework: vite
+
+runtime:
+  kind: node
+  version: "20"
+  arch: [arm64, x86_64]
+  package_manager: npm
+  dependency_strategy: frozen
+
+env:
+  - name: VITE_DEV_PORT
+    value: "5173"
+    description: "Internal dev server port (proxy translates from {{PORT}})."
+
+install:
+  - argv: ["npm", "ci"]
+
+start:
+  argv: ["npm", "run", "dev", "--", "--base", "/{{APP_PATH}}/", "--port", "{{PORT}}", "--host", "127.0.0.1"]
+  port: detect
+  readiness:
+    type: http
+    path: /
+    timeout_seconds: 60
+
+surface:
+  kind: web
+  preview_name: "World Monitor"
+  base_path_strategy: flag
+
+dev:
+  hmr: vite
+  editable: true
+  restart_on:
+    - vite.config.*
+    - package.json
+
+permissions:
+  network:
+    outbound: true
+    inbound: false
+  filesystem: app-private
+  os8_capabilities: []
+  secrets: []
+
+resources:
+  memory_limit_mb: 1024
+  gpu: none
+  disk_mb: 800
+
+legal:
+  license: AGPL-3.0-only
+  commercial_use: restricted
+  notes: "Personal use OK. Commercial use requires AGPL-3.0 compliance."
+
+review:
+  channel: verified
+  reviewed_at: "2026-04-28"
+  reviewer: os8ai/curators
+  risk: low
