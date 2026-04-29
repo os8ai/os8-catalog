@@ -1,0 +1,68 @@
+# yaml-language-server: $schema=../../schema/appspec-v1.json
+
+schemaVersion: 1
+slug: excalidraw
+name: Excalidraw
+publisher: excalidraw
+icon: ./icon.png
+category: productivity
+description: >-
+  Open-source virtual whiteboard for sketching hand-drawn diagrams.
+  End-to-end encrypted real-time collaboration, library of reusable
+  shapes, and exports to PNG/SVG/JSON.
+
+upstream:
+  git: https://github.com/excalidraw/excalidraw.git
+  ref: v0.18.1
+
+framework: vite
+
+runtime:
+  kind: node
+  version: "20"
+  arch: [arm64, x86_64]
+  package_manager: yarn
+  dependency_strategy: frozen
+
+install:
+  - argv: ["yarn", "install", "--frozen-lockfile"]
+
+start:
+  argv: ["yarn", "workspace", "@excalidraw/excalidraw-app", "start"]
+  port: detect
+  readiness:
+    type: http
+    path: /
+    timeout_seconds: 90
+
+surface:
+  kind: web
+  preview_name: Excalidraw
+  base_path_strategy: flag
+
+dev:
+  hmr: vite
+  editable: true
+
+permissions:
+  network:
+    outbound: true
+    inbound: false
+  filesystem: app-private
+  os8_capabilities: []
+  secrets: []
+
+resources:
+  memory_limit_mb: 1024
+  gpu: none
+  disk_mb: 1500
+
+legal:
+  license: MIT
+  commercial_use: unrestricted
+
+review:
+  channel: verified
+  reviewed_at: "2026-04-28"
+  reviewer: os8ai/curators
+  risk: low
