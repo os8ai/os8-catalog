@@ -25,6 +25,13 @@ const { parseGithubUrl, resolveRef } = require('./lib/github');
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 
+// Skip any path under a folder whose name starts with `_` (e.g.
+// apps/_test-fixtures/bad-docker/manifest.yaml). Folders prefixed with `_`
+// hold CI fixtures and must not be processed by production scripts.
+function isFixturePath(p) {
+  return p.split(path.sep).some((seg) => seg.startsWith('_'));
+}
+
 function changedManifestPaths() {
   const baseSha = process.env.PR_BASE_SHA;
   const headSha = process.env.PR_HEAD_SHA;
@@ -34,10 +41,7 @@ function changedManifestPaths() {
       cwd: REPO_ROOT,
       encoding: 'utf8',
     });
-    return all.stdout
-      .split('\n')
-      .filter(Boolean)
-      .filter((p) => !path.basename(path.dirname(p)).startsWith('_'));
+    return all.stdout.split('\n').filter(Boolean).filter((p) => !isFixturePath(p));
   }
   const diff = spawnSync(
     'git',
@@ -47,10 +51,7 @@ function changedManifestPaths() {
   if (diff.status !== 0) {
     throw new Error(`git diff failed: ${diff.stderr}`);
   }
-  return diff.stdout
-    .split('\n')
-    .filter(Boolean)
-    .filter((p) => !path.basename(path.dirname(p)).startsWith('_'));
+  return diff.stdout.split('\n').filter(Boolean).filter((p) => !isFixturePath(p));
 }
 
 function commitUrl({ owner, repo, sha }) {
