@@ -1,0 +1,40 @@
+name: lockfile-gate
+
+on:
+  pull_request:
+    paths:
+      - 'apps/**/manifest.yaml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lockfile-gate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - run: npm ci
+
+      - name: Run lockfile gate self-tests (offline)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node .github/scripts/test-lockfile.js
+
+      - name: Run lockfile gate
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_BASE_SHA:  ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA:  ${{ github.event.pull_request.head.sha }}
+        run: node .github/scripts/check-lockfile.js
