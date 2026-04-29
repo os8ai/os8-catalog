@@ -1,0 +1,72 @@
+# yaml-language-server: $schema=../../schema/appspec-v1.json
+
+schemaVersion: 1
+slug: documenso
+name: Documenso
+publisher: documenso
+icon: ./icon.png
+category: productivity
+description: >-
+  Open-source DocuSign alternative. Send, sign, and track documents with
+  legally binding e-signatures. Self-hosted; your data stays on your
+  machine.
+
+upstream:
+  git: https://github.com/documenso/documenso.git
+  ref: v2.9.1
+
+runtime:
+  kind: node
+  version: "20"
+  arch: [arm64, x86_64]
+  package_manager: npm
+  dependency_strategy: frozen
+
+install:
+  - argv: ["npm", "ci"]
+
+start:
+  argv: ["npm", "run", "dev"]
+  port: detect
+  readiness:
+    type: http
+    path: /
+    timeout_seconds: 180
+
+surface:
+  kind: web
+  preview_name: Documenso
+  base_path_strategy: subdomain
+
+permissions:
+  network:
+    outbound: true
+    inbound: false
+  filesystem: app-private
+  os8_capabilities: []
+  secrets:
+    - name: DATABASE_URL
+      required: true
+      prompt: "Postgres connection string (Documenso stores all signing data here)."
+    - name: NEXTAUTH_SECRET
+      required: true
+      prompt: "Random 32-byte secret for session signing. Generate with `openssl rand -base64 32`."
+    - name: RESEND_API_KEY
+      required: false
+      prompt: "Optional: Resend API key for transactional email. Without this, email features no-op."
+
+resources:
+  memory_limit_mb: 2048
+  gpu: none
+  disk_mb: 3000
+
+legal:
+  license: AGPL-3.0
+  commercial_use: restricted
+  notes: "AGPL-3.0 enterprise-friendly with clear network-use clause. Commercial redistribution requires AGPL-3.0 compliance."
+
+review:
+  channel: verified
+  reviewed_at: "2026-04-28"
+  reviewer: os8ai/curators
+  risk: medium

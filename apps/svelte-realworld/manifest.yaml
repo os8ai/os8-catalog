@@ -1,0 +1,68 @@
+# yaml-language-server: $schema=../../schema/appspec-v1.json
+
+schemaVersion: 1
+slug: svelte-realworld
+name: "SvelteKit Realworld"
+publisher: sveltejs
+icon: ./icon.png
+category: dev-tools
+description: >-
+  The canonical SvelteKit implementation of the Realworld example app
+  (Medium-style blogging platform). Useful as a reference for building
+  full-stack SvelteKit apps in OS8.
+
+upstream:
+  git: https://github.com/sveltejs/realworld.git
+  ref: e80873cac4e615c96b6b95c6dcbc19699934a188
+
+framework: sveltekit
+
+runtime:
+  kind: node
+  version: "20"
+  arch: [arm64, x86_64]
+  package_manager: pnpm
+  dependency_strategy: frozen
+
+install:
+  - argv: ["pnpm", "install", "--frozen-lockfile"]
+
+start:
+  argv: ["pnpm", "dev", "--port", "{{PORT}}", "--host", "127.0.0.1"]
+  port: detect
+  readiness:
+    type: http
+    path: /
+    timeout_seconds: 60
+
+surface:
+  kind: web
+  preview_name: "SvelteKit Realworld"
+  base_path_strategy: flag
+
+dev:
+  hmr: vite
+  editable: true
+
+permissions:
+  network:
+    outbound: true
+    inbound: false
+  filesystem: app-private
+  os8_capabilities: []
+  secrets: []
+
+resources:
+  memory_limit_mb: 512
+  gpu: none
+  disk_mb: 400
+
+legal:
+  license: MIT
+  commercial_use: unrestricted
+
+review:
+  channel: verified
+  reviewed_at: "2026-04-28"
+  reviewer: os8ai/curators
+  risk: low
