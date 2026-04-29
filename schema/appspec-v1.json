@@ -1,0 +1,269 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://os8.ai/schema/appspec-v1.json",
+  "title": "OS8 AppSpec v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion", "slug", "name", "publisher", "icon", "category",
+    "description", "upstream", "runtime", "install", "start", "surface",
+    "permissions", "legal", "review"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{1,39}$",
+      "description": "Globally unique within channel; immutable after publish; reserved prefix `os8-` is for first-party apps."
+    },
+
+    "name":        { "type": "string", "minLength": 1, "maxLength": 60 },
+    "publisher":   { "type": "string", "minLength": 1, "maxLength": 60 },
+    "description": { "type": "string", "minLength": 1, "maxLength": 280 },
+
+    "icon": {
+      "type": "string",
+      "pattern": "^\\./[A-Za-z0-9_./-]+\\.(png|svg)$",
+      "description": "Relative to the manifest folder. Image checks (256x256 <=100KB for png) enforced in validate.yml."
+    },
+
+    "screenshots": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 5,
+      "items": {
+        "type": "string",
+        "pattern": "^\\./[A-Za-z0-9_./-]+\\.(png|jpg|jpeg|webp)$"
+      }
+    },
+
+    "category": {
+      "enum": ["productivity", "intelligence", "media", "dev-tools", "data", "ai-experiments", "utilities"]
+    },
+
+    "upstream": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["git", "ref"],
+      "properties": {
+        "git": {
+          "type": "string",
+          "pattern": "^https://github\\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+(\\.git)?$"
+        },
+        "ref": {
+          "type": "string",
+          "oneOf": [
+            { "pattern": "^[0-9a-f]{40}$",                "title": "40-char commit SHA" },
+            { "pattern": "^v\\d+\\.\\d+\\.\\d+(-[A-Za-z0-9.-]+)?$", "title": "semver tag (e.g. v1.2.3, v1.2.3-rc.1)" }
+          ],
+          "description": "Branch names rejected. Sync resolves tags to SHAs."
+        }
+      }
+    },
+
+    "framework": {
+      "enum": ["vite", "nextjs", "sveltekit", "astro", "streamlit", "gradio", "hugo", "jekyll", "none"]
+    },
+
+    "runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "version"],
+      "properties": {
+        "kind":             { "enum": ["node", "python", "static"] },
+        "version":          { "type": "string", "pattern": "^[0-9.]+$" },
+        "arch":             { "type": "array", "items": { "enum": ["arm64", "x86_64"] }, "default": ["arm64", "x86_64"] },
+        "package_manager":  { "enum": ["auto", "npm", "pnpm", "yarn", "bun", "pip", "uv", "poetry"], "default": "auto" },
+        "dependency_strategy": { "enum": ["frozen", "strict", "best-effort"], "default": "frozen" }
+      }
+    },
+
+    "env": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "value"],
+        "properties": {
+          "name":        { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+          "value":       { "type": "string" },
+          "description": { "type": "string" }
+        }
+      }
+    },
+
+    "install":     { "$ref": "#/$defs/commandList" },
+    "postInstall": { "$ref": "#/$defs/commandList" },
+    "preStart":    { "$ref": "#/$defs/commandList" },
+
+    "start": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["argv"],
+      "properties": {
+        "argv":       { "$ref": "#/$defs/argv" },
+        "shell":      { "const": false, "default": false },
+        "port":       { "oneOf": [{ "const": "detect" }, { "type": "string", "pattern": "^fixed:[0-9]{2,5}$" }] },
+        "readiness": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type"],
+          "properties": {
+            "type":            { "enum": ["http", "log-regex"] },
+            "path":            { "type": "string" },
+            "regex":           { "type": "string" },
+            "timeout_seconds": { "type": "integer", "minimum": 1, "maximum": 600, "default": 30 }
+          }
+        }
+      }
+    },
+
+    "allow_package_scripts": {
+      "type": "boolean",
+      "default": false,
+      "description": "Opt-in to running package.json postinstall/preinstall scripts during install. Verified channel: ignored (always allowed; LLM review flags). Community channel: required to run scripts. Developer Import: ignored (always blocked). See plan section 10 Q8."
+    },
+
+    "surface": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind":                { "const": "web" },
+        "preview_name":        { "type": "string", "maxLength": 60 },
+        "base_path_strategy":  { "enum": ["flag", "subdomain"], "default": "flag" }
+      }
+    },
+
+    "dev": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "hmr":        { "enum": ["vite", "next", "streamlit", "gradio", "watcher", "none"] },
+        "watch":      { "type": "array", "items": { "type": "string" } },
+        "editable":   { "type": "boolean", "default": true },
+        "restart_on": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+
+    "permissions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["network", "filesystem"],
+      "properties": {
+        "network": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["outbound", "inbound"],
+          "properties": {
+            "outbound": { "type": "boolean" },
+            "inbound":  { "type": "boolean" }
+          }
+        },
+        "filesystem": { "const": "app-private" },
+        "os8_capabilities": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^(blob\\.(readwrite|readonly)|db\\.(readwrite|readonly)|telegram\\.send|imagegen|speak|youtube|x|google\\.(calendar\\.(readonly|readwrite)|drive\\.readonly|gmail\\.readonly)|mcp\\.[a-z0-9_-]+\\.[a-z0-9_*-]+)$"
+          }
+        },
+        "secrets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name"],
+            "properties": {
+              "name":     { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "required": { "type": "boolean", "default": true },
+              "prompt":   { "type": "string" },
+              "pattern":  { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+
+    "resources": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "memory_limit_mb": { "type": "integer", "minimum": 64, "maximum": 65536 },
+        "gpu":             { "enum": ["required", "optional", "none"] },
+        "disk_mb":         { "type": "integer", "minimum": 1, "maximum": 1048576 }
+      }
+    },
+
+    "legal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["license"],
+      "properties": {
+        "license":         { "type": "string", "pattern": "^[A-Za-z0-9.+-]+( WITH .+)?$", "description": "SPDX expression" },
+        "commercial_use":  { "enum": ["unrestricted", "restricted", "prohibited"] },
+        "notes":           { "type": "string" }
+      }
+    },
+
+    "review": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["channel"],
+      "properties": {
+        "channel":     { "enum": ["verified", "community", "developer-import"] },
+        "reviewed_at": { "type": "string", "format": "date" },
+        "reviewer":    { "type": "string" },
+        "risk":        { "enum": ["low", "medium", "high"] }
+      }
+    }
+  },
+
+  "allOf": [
+    {
+      "if": {
+        "type": "object",
+        "properties": {
+          "review": {
+            "type": "object",
+            "properties": { "channel": { "const": "verified" } },
+            "required": ["channel"]
+          }
+        },
+        "required": ["review"]
+      },
+      "then": {
+        "type": "object",
+        "properties": {
+          "runtime": {
+            "type": "object",
+            "properties": { "dependency_strategy": { "const": "frozen" } },
+            "required": ["dependency_strategy"]
+          }
+        },
+        "required": ["runtime"]
+      }
+    }
+  ],
+
+  "$defs": {
+    "argv": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "commandList": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["argv"],
+        "properties": {
+          "argv":  { "$ref": "#/$defs/argv" },
+          "shell": { "const": false, "default": false }
+        }
+      }
+    }
+  }
+}

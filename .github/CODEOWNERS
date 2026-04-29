@@ -1,0 +1,18 @@
+# OS8 Catalog — code owners
+#
+# A per-app ownership model: a global curator team owns everything by default,
+# senior curators own the schema and CI (so a malicious manifest author cannot
+# relax CI in their own PR), and per-app entries add the manifest author as a
+# second required reviewer for their app folder.
+
+# Default — global curator team approves everything
+*               @os8ai/curators
+
+# Schema and CI are protected — only senior curators
+/schema/        @os8ai/curators-senior
+/.github/       @os8ai/curators-senior
+
+# Per-app owners (added when an app lands)
+# /apps/worldmonitor/   @koala73 @os8ai/curators
+# /apps/excalidraw/     @os8ai/curators
+# /apps/<slug>/         @<author> @os8ai/curators
