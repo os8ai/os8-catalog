@@ -1,0 +1,78 @@
+name: resolve-refs
+
+on:
+  pull_request:
+    paths:
+      - 'apps/**/manifest.yaml'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: resolve-refs-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - run: npm ci
+
+      - name: Run resolver self-tests (offline + 1 live tag)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node .github/scripts/test-resolve.js
+
+      - name: Resolve upstream refs
+        id: resolve
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_BASE_SHA:  ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA:  ${{ github.event.pull_request.head.sha }}
+          PR_NUMBER:    ${{ github.event.pull_request.number }}
+        run: node .github/scripts/resolve-refs.js
+
+      - name: Comment on PR
+        if: always() && steps.resolve.outputs.comment != ''
+        uses: actions/github-script@v7
+        env:
+          COMMENT_BODY: ${{ steps.resolve.outputs.comment }}
+        with:
+          script: |
+            const body = process.env.COMMENT_BODY;
+            // Find existing bot comment to update; otherwise create a new one.
+            // The sentinel `<!-- resolve-refs-bot -->` at the start of the body
+            // lets us tell our own comments apart from human comments.
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.find(c =>
+              c.user.type === 'Bot' && c.body && c.body.startsWith('<!-- resolve-refs-bot -->')
+            );
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
