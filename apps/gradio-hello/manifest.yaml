@@ -1,0 +1,69 @@
+# yaml-language-server: $schema=../../schema/appspec-v1.json
+
+schemaVersion: 1
+slug: gradio-hello
+name: "Gradio Hello"
+publisher: os8-curators
+icon: ./icon.png
+category: dev-tools
+description: >-
+  Minimal Gradio Interface demo. Proves the Phase 2 Python runtime
+  + Gradio framework defaults end-to-end.
+
+upstream:
+  git: https://github.com/os8ai/gradio-hello.git
+  ref: v1.0.0
+
+framework: gradio
+
+runtime:
+  kind: python
+  version: "3.12"
+  arch: [arm64, x86_64]
+  package_manager: uv
+  dependency_strategy: frozen
+
+install: []
+
+start:
+  argv: ["python", "{{APP_DIR}}/app.py"]
+  port: detect
+  readiness:
+    type: http
+    path: /
+    timeout_seconds: 60
+
+surface:
+  kind: web
+  preview_name: "Gradio Hello"
+
+dev:
+  hmr: watcher
+  editable: true
+  watch:
+    - "."
+  restart_on:
+    - "*.py"
+
+permissions:
+  network:
+    outbound: false
+    inbound: false
+  filesystem: app-private
+  os8_capabilities: []
+  secrets: []
+
+resources:
+  memory_limit_mb: 512
+  gpu: none
+  disk_mb: 200
+
+legal:
+  license: MIT
+  commercial_use: unrestricted
+
+review:
+  channel: verified
+  reviewed_at: "2026-04-29"
+  reviewer: os8ai/curators
+  risk: low

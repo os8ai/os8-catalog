@@ -1,0 +1,74 @@
+# yaml-language-server: $schema=../../schema/appspec-v1.json
+
+schemaVersion: 1
+slug: streamlit-hello
+name: "Streamlit Hello"
+publisher: os8-curators
+icon: ./icon.png
+category: dev-tools
+description: >-
+  Minimal Streamlit demo. Proves the Phase 2 Python runtime + Streamlit
+  framework defaults end-to-end.
+
+upstream:
+  git: https://github.com/os8ai/streamlit-hello.git
+  ref: v1.0.0
+
+framework: streamlit
+
+runtime:
+  kind: python
+  version: "3.12"
+  arch: [arm64, x86_64]
+  package_manager: uv
+  dependency_strategy: frozen
+
+install: []
+
+start:
+  argv:
+    - streamlit
+    - run
+    - "{{APP_DIR}}/app.py"
+    - "--server.port={{PORT}}"
+    - "--server.address=127.0.0.1"
+    - "--server.enableCORS=false"
+    - "--server.enableXsrfProtection=false"
+    - "--server.headless=true"
+    - "--browser.gatherUsageStats=false"
+  port: detect
+  readiness:
+    type: log-regex
+    regex: "You can now view your Streamlit app"
+    timeout_seconds: 60
+
+surface:
+  kind: web
+  preview_name: "Streamlit Hello"
+
+dev:
+  hmr: streamlit
+  editable: true
+
+permissions:
+  network:
+    outbound: false
+    inbound: false
+  filesystem: app-private
+  os8_capabilities: []
+  secrets: []
+
+resources:
+  memory_limit_mb: 512
+  gpu: none
+  disk_mb: 200
+
+legal:
+  license: MIT
+  commercial_use: unrestricted
+
+review:
+  channel: verified
+  reviewed_at: "2026-04-29"
+  reviewer: os8ai/curators
+  risk: low
