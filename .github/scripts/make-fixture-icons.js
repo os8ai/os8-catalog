@@ -47,6 +47,8 @@ async function main() {
     'bad-shell',
     'bad-branch-ref',
     'bad-slug-mismatch',
+    'valid-docker-v2',
+    'bad-docker-v2-no-image',
   ];
   for (const folder of validIconFolders) {
     const target = path.join(FIXTURES_DIR, folder, 'icon.png');

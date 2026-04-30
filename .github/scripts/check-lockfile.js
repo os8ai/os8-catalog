@@ -82,6 +82,14 @@ async function gateOne(relPath) {
     return { slug, skipped: `channel=${channel}` };
   }
 
+  // PR 2.5: docker manifests pin via runtime.image_digest, not a lockfile.
+  // PR 2.3: static manifests have no package manager — pinning is by
+  // upstream commit SHA only.
+  const runtimeKind = manifest && manifest.runtime && manifest.runtime.kind;
+  if (runtimeKind === 'docker' || runtimeKind === 'static') {
+    return { slug, skipped: `runtime.kind=${runtimeKind}` };
+  }
+
   const upstream = manifest.upstream || {};
   const { owner, repo } = parseGithubUrl(upstream.git);
   const { sha: resolvedSha } = await resolveRef({ owner, repo, ref: upstream.ref });

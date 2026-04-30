@@ -30,7 +30,9 @@ const addFormats = require('ajv-formats');
 const sharp = require('sharp');
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
-const SCHEMA_PATH = path.join(REPO_ROOT, 'schema', 'appspec-v1.json');
+const SCHEMA_V1_PATH = path.join(REPO_ROOT, 'schema', 'appspec-v1.json');
+const SCHEMA_V2_PATH = path.join(REPO_ROOT, 'schema', 'appspec-v2.json');
+const SCHEMA_PATH = SCHEMA_V1_PATH;     // legacy alias for the report header
 const APPS_DIR = path.join(REPO_ROOT, 'apps');
 const REPORT_PATH = path.join(REPO_ROOT, 'validation-report.json');
 
@@ -39,10 +41,19 @@ const SCREENSHOT_MAX_BYTES = 500 * 1024;
 const ICON_PNG_DIMENSIONS = { width: 256, height: 256 };
 
 async function main() {
-  const schema = JSON.parse(fs.readFileSync(SCHEMA_PATH, 'utf8'));
+  const schemaV1 = JSON.parse(fs.readFileSync(SCHEMA_V1_PATH, 'utf8'));
+  const schemaV2 = JSON.parse(fs.readFileSync(SCHEMA_V2_PATH, 'utf8'));
   const ajv = new Ajv({ strict: true, allErrors: true });
   addFormats(ajv);
-  const validateSchema = ajv.compile(schema);
+  // The v1 schema declares `$schema: draft-07` and v2 declares 2020-12;
+  // ajv/dist/2020 ships only the 2020 metaschema by default. Load draft-07
+  // explicitly so v2's `allOf: [{ $ref: appspec-v1 }]` can dereference.
+  ajv.addMetaSchema(require('ajv/dist/refs/json-schema-draft-07.json'));
+  // Register v1 by $id so v2's $ref resolves at compile time.
+  ajv.addSchema(schemaV1, schemaV1.$id);
+  const validateV1 = ajv.compile(schemaV1);
+  const validateV2 = ajv.compile(schemaV2);
+  const pickValidator = (m) => (m && m.schemaVersion === 2 ? validateV2 : validateV1);
 
   // Find every manifest. Skip the _test-fixtures sentinel during production
   // validation -- those are stand-alone fixtures the test suite drives directly.
@@ -84,6 +95,7 @@ async function main() {
       continue;
     }
 
+    const validateSchema = pickValidator(manifest);
     if (!validateSchema(manifest)) {
       result.ok = false;
       for (const err of validateSchema.errors ?? []) {
@@ -114,10 +126,13 @@ async function main() {
       }
     }
 
-    // Defensive double-checks beyond the schema.
-    if (manifest.runtime && manifest.runtime.kind === 'docker') {
+    // Defensive double-checks beyond the schema. v1 manifests still reject
+    // docker (the v2 schema un-rejects it).
+    if (manifest.runtime
+        && manifest.runtime.kind === 'docker'
+        && manifest.schemaVersion !== 2) {
       result.ok = false;
-      result.errors.push('runtime.kind = docker is reserved for v2 (rejected).');
+      result.errors.push('runtime.kind = docker requires schemaVersion: 2.');
     }
     for (const field of ['install', 'postInstall', 'preStart']) {
       const list = manifest[field];

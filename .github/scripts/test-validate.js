@@ -52,6 +52,17 @@ const cases = [
     expectOk: false,
     expectErrorIncludes: ['exceeds'],
   },
+  // v2 schema dispatch (PR 2.5).
+  {
+    fixture: 'valid-docker-v2',
+    expectOk: true,
+    expectErrorIncludes: [],
+  },
+  {
+    fixture: 'bad-docker-v2-no-image',
+    expectOk: false,
+    expectErrorIncludes: ['image'],
+  },
 ];
 
 function copyDirSync(src, dst) {
@@ -70,10 +81,12 @@ function runOneCase(c) {
   const sandbox = fs.mkdtempSync(path.join(os.tmpdir(), 'os8-catalog-test-'));
   try {
     fs.mkdirSync(path.join(sandbox, 'schema'), { recursive: true });
-    fs.copyFileSync(
-      path.join(SCHEMA_DIR, 'appspec-v1.json'),
-      path.join(sandbox, 'schema', 'appspec-v1.json')
-    );
+    for (const f of ['appspec-v1.json', 'appspec-v2.json']) {
+      fs.copyFileSync(
+        path.join(SCHEMA_DIR, f),
+        path.join(sandbox, 'schema', f)
+      );
+    }
     fs.mkdirSync(path.join(sandbox, '.github', 'scripts'), { recursive: true });
     fs.copyFileSync(VALIDATOR, path.join(sandbox, '.github', 'scripts', 'validate-manifests.js'));
 
