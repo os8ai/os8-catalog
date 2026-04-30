@@ -1,0 +1,41 @@
+# Test fixture: v2 docker manifest missing required runtime.image. Should
+# FAIL validation (image is required when runtime.kind=docker per the v2
+# if/then block).
+# yaml-language-server: $schema=../../../schema/appspec-v2.json
+
+schemaVersion: 2
+slug: bad-docker-v2-no-image
+name: Bad Docker v2 - missing image
+publisher: os8ai
+icon: ./icon.png
+category: dev-tools
+description: Test fixture asserting v2's `runtime.image` requirement when kind=docker.
+
+upstream:
+  git: https://github.com/example/example.git
+  ref: v1.0.0
+
+runtime:
+  kind: docker
+  version: "1"
+  internal_port: 8080
+  arch: [arm64, x86_64]
+
+start:
+  argv: []
+  port: detect
+  readiness: { type: http, path: /, timeout_seconds: 30 }
+
+surface:
+  kind: web
+
+permissions:
+  network: { outbound: true, inbound: false }
+  filesystem: app-private
+
+legal:
+  license: MIT
+  commercial_use: unrestricted
+
+review:
+  channel: verified

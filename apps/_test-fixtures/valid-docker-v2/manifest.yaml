@@ -1,0 +1,50 @@
+# Test fixture: minimal valid v2 docker manifest. Should PASS validation.
+# yaml-language-server: $schema=../../../schema/appspec-v2.json
+
+schemaVersion: 2
+slug: valid-docker-v2
+name: Valid Docker v2 Fixture
+publisher: os8ai
+icon: ./icon.png
+category: dev-tools
+description: Test fixture exercising the v2 docker runtime path.
+
+upstream:
+  git: https://github.com/example/example.git
+  ref: v1.0.0
+
+runtime:
+  kind: docker
+  version: "1"
+  image: ghcr.io/example/example:v1.0.0
+  image_digest: sha256:0000000000000000000000000000000000000000000000000000000000000000
+  internal_port: 8080
+  arch: [arm64, x86_64]
+
+start:
+  argv: []
+  port: detect
+  readiness:
+    type: http
+    path: /health
+    timeout_seconds: 60
+
+surface:
+  kind: web
+
+permissions:
+  network:
+    outbound: true
+    inbound: false
+  filesystem: app-private
+  os8_capabilities: []
+  secrets: []
+
+legal:
+  license: MIT
+  commercial_use: unrestricted
+
+review:
+  channel: verified
+  reviewed_at: "2026-04-29"
+  risk: low
