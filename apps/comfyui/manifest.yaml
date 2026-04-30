@@ -1,0 +1,93 @@
+# yaml-language-server: $schema=../../schema/appspec-v1.json
+
+schemaVersion: 1
+slug: comfyui
+name: "ComfyUI"
+publisher: comfy-org
+icon: ./icon.png
+category: ai-experiments
+description: >-
+  Powerful diffusion-model GUI with a graph/nodes interface. Workflows
+  for Stable Diffusion, SDXL, FLUX, and the broader ecosystem of
+  open-weights image and video models.
+
+upstream:
+  git: https://github.com/comfyanonymous/ComfyUI.git
+  ref: v0.20.1
+  # Sync resolves to SHA 64b8457f55cd7fb54ca7a956d9c73b505e903e0c per
+  # GET /repos/Comfy-Org/ComfyUI/git/refs/tags/v0.20.1.
+
+framework: none
+
+runtime:
+  kind: python
+  version: "3.12"
+  arch: [arm64, x86_64]
+  package_manager: pip
+  dependency_strategy: frozen
+
+install: []
+
+start:
+  # ComfyUI v0.20.1 exposes --output-directory / --input-directory /
+  # --user-directory CLI flags (verified in main.py:104-127). OS8 redirects
+  # generated artifacts and uploaded data into ~/os8/blob/<id>/ via
+  # {{BLOB_DIR}} substitution — same source/data split the rest of OS8 uses
+  # (apps/<id>/ for source, blob/<id>/ for data). Plan §5 decision 18.
+  argv:
+    - python
+    - main.py
+    - "--listen"
+    - "127.0.0.1"
+    - "--port"
+    - "{{PORT}}"
+    - "--output-directory"
+    - "{{BLOB_DIR}}"
+    - "--input-directory"
+    - "{{BLOB_DIR}}/inputs"
+    - "--user-directory"
+    - "{{BLOB_DIR}}/user"
+  port: detect
+  readiness:
+    type: log-regex
+    regex: "To see the GUI go to:"
+    timeout_seconds: 120
+
+surface:
+  kind: web
+  preview_name: "ComfyUI"
+
+dev:
+  hmr: none
+  editable: true
+  restart_on:
+    - "main.py"
+    - "execution.py"
+    - "server.py"
+
+permissions:
+  network:
+    outbound: true        # fetches model files from huggingface, civitai
+    inbound: false
+  filesystem: app-private
+  os8_capabilities: []    # ComfyUI uses its own filesystem APIs (redirected
+                          # via the CLI flags above); no window.os8.* calls.
+  secrets: []
+
+resources:
+  memory_limit_mb: 16384  # advisory — diffusion models are memory-heavy
+  gpu: optional
+  disk_mb: 50000
+
+legal:
+  license: GPL-3.0-only
+  commercial_use: restricted
+  notes: >-
+    GPL-3.0. Modifying ComfyUI for commercial distribution requires
+    releasing source under GPL.
+
+review:
+  channel: verified
+  reviewed_at: "2026-04-29"
+  reviewer: os8ai/curators
+  risk: medium            # large dep tree; surfaces in install plan UI

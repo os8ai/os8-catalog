@@ -1,0 +1,67 @@
+# yaml-language-server: $schema=../../schema/appspec-v1.json
+
+schemaVersion: 1
+slug: hello-static
+name: "Hello Static"
+publisher: os8-curators
+icon: ./icon.png
+category: dev-tools
+description: >-
+  Trivial static-HTML app. Proves OS8's static runtime + the per-app
+  express.static middleware on a subdomain.
+
+upstream:
+  git: https://github.com/os8ai/hello-static.git
+  ref: v1.0.0
+
+framework: none
+
+runtime:
+  kind: static
+  version: "0"
+  arch: [arm64, x86_64]
+  dependency_strategy: frozen
+
+install: []
+
+start:
+  # `os8:static` is a sentinel argv[0]; the static adapter recognizes it
+  # and skips the spawn path, returning a `_kind: 'static'` info object.
+  # OS8's reverse-proxy registers express.static for the app's subdomain.
+  argv: ["os8:static", "--dir", "."]
+  port: detect
+  readiness:
+    type: http
+    path: /
+    timeout_seconds: 5
+
+surface:
+  kind: web
+  preview_name: "Hello Static"
+
+dev:
+  hmr: none
+  editable: true
+
+permissions:
+  network:
+    outbound: false
+    inbound: false
+  filesystem: app-private
+  os8_capabilities: []
+  secrets: []
+
+resources:
+  memory_limit_mb: 64
+  gpu: none
+  disk_mb: 5
+
+legal:
+  license: MIT
+  commercial_use: unrestricted
+
+review:
+  channel: verified
+  reviewed_at: "2026-04-29"
+  reviewer: os8ai/curators
+  risk: low

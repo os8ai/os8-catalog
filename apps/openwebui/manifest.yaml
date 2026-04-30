@@ -1,0 +1,73 @@
+# yaml-language-server: $schema=../../schema/appspec-v2.json
+
+schemaVersion: 2
+slug: openwebui
+name: "Open WebUI"
+publisher: open-webui
+icon: ./icon.png
+category: ai-experiments
+description: >-
+  User-friendly AI Interface (supports Ollama, OpenAI API, and other
+  providers). FastAPI backend with a SvelteKit frontend; ships from
+  upstream's official multi-arch container image.
+
+upstream:
+  git: https://github.com/open-webui/open-webui.git
+  ref: v0.9.2
+
+# No framework — runtime.kind: docker pulls a published image.
+
+runtime:
+  kind: docker
+  version: "1"          # Docker Engine major version (informational)
+  image: "ghcr.io/open-webui/open-webui:v0.9.2"
+  # Multi-arch index digest, resolved via `docker buildx imagetools inspect`
+  # at PR-prep time. Catalog sync re-resolves on each tag-mutation alarm
+  # (Phase 0 follow-up).
+  image_digest: "sha256:a7e4796ae894d1e2a0c1824860ade472f35c507608a01c3581377b5c19b0ed49"
+  internal_port: 8080
+  arch: [arm64, x86_64]
+
+env:
+  - name: WEBUI_AUTH
+    value: "false"
+    description: "Disable login UI (single-user OS8 install)."
+
+start:
+  argv: []
+  port: detect
+  readiness:
+    type: http
+    path: /health
+    timeout_seconds: 60
+
+surface:
+  kind: web
+  preview_name: "Open WebUI"
+
+dev:
+  hmr: none
+  editable: false       # docker image is opaque
+
+permissions:
+  network:
+    outbound: true
+    inbound: false
+  filesystem: app-private
+  os8_capabilities: []
+  secrets: []
+
+resources:
+  memory_limit_mb: 4096
+  gpu: optional
+  disk_mb: 8000
+
+legal:
+  license: BSD-3-Clause-Clear
+  commercial_use: unrestricted
+
+review:
+  channel: verified
+  reviewed_at: "2026-04-29"
+  reviewer: os8ai/curators
+  risk: medium
