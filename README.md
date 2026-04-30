@@ -1,8 +1,8 @@
 # OS8 Catalog
 
-The official catalog of apps installable through [OS8](https://os8.ai).
+The official catalog of apps installable through [OS8](https://os8.ai). Live storefront: [os8.ai/apps](https://os8.ai/apps).
 
-Browse the live catalog at https://os8.ai/apps.
+Currently 5 apps in the verified channel; community channel coming in Phase 3.
 
 ## Adding an app
 
