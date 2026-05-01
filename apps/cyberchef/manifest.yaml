@@ -1,0 +1,77 @@
+# yaml-language-server: $schema=../../schema/appspec-v1.json
+
+schemaVersion: 1
+slug: cyberchef
+name: "CyberChef"
+publisher: gchq
+icon: ./icon.png
+category: dev-tools
+description: >-
+  The Cyber Swiss Army Knife — a web app for encryption, encoding,
+  compression, and data analysis. 300+ operations chained as recipes;
+  all client-side, no backend.
+
+upstream:
+  git: https://github.com/gchq/CyberChef.git
+  ref: v11.0.0
+
+framework: none
+
+runtime:
+  kind: static
+  version: "0"
+  arch: [arm64, x86_64]
+  package_manager: npm
+  dependency_strategy: frozen
+
+install:
+  - argv: ["npm", "ci"]
+  - argv: ["npm", "run", "build"]
+
+start:
+  # `os8:static` is the static-adapter sentinel (see hello-static fixture).
+  # The adapter registers express.static for the build output dir; no
+  # long-running process is spawned.
+  argv: ["os8:static", "--dir", "build/prod"]
+  port: detect
+  readiness:
+    type: http
+    path: /
+    timeout_seconds: 10
+
+surface:
+  kind: web
+  preview_name: "CyberChef"
+
+dev:
+  hmr: none
+  editable: true
+
+permissions:
+  network:
+    outbound: false
+    inbound: false
+  filesystem: app-private
+  os8_capabilities: []
+  secrets: []
+
+resources:
+  memory_limit_mb: 512
+  gpu: none
+  disk_mb: 1500   # node_modules during install + build/prod output
+
+legal:
+  license: Apache-2.0
+  commercial_use: unrestricted
+  notes: "Apache-2.0 — patent grant included; safe for commercial redistribution."
+
+review:
+  channel: verified
+  reviewed_at: "2026-05-01"
+  reviewer: os8ai/curators
+  # Risk: low. CyberChef is GCHQ's open-source toolkit, used daily by
+  # security professionals. Single-repo webpack-built static app. No
+  # outbound network at runtime (all operations client-side). Build
+  # surfaces postinstall scripts that fix vendored dependency imports
+  # — these are part of the canonical install flow.
+  risk: low
