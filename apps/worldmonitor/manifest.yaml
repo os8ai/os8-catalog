@@ -35,7 +35,11 @@ install:
   - argv: ["npm", "ci"]
 
 start:
-  argv: ["npm", "run", "dev", "--", "--base", "/{{APP_PATH}}/", "--port", "{{PORT}}", "--host", "127.0.0.1"]
+  # External apps live at <slug>.localhost:8888 via OS8's reverse proxy
+  # (Phase 1 PR 1.14). Vite serves at base "/" inside that origin, so the
+  # path-prefix --base flag isn't needed and would in fact misroute.
+  # Verified end-to-end by Leo on 2026-05-01 via Developer Import.
+  argv: ["npm", "run", "dev", "--", "--port", "{{PORT}}", "--host", "127.0.0.1"]
   port: detect
   readiness:
     type: http
@@ -45,7 +49,6 @@ start:
 surface:
   kind: web
   preview_name: "World Monitor"
-  base_path_strategy: flag
 
 dev:
   hmr: vite
@@ -74,6 +77,12 @@ legal:
 
 review:
   channel: verified
-  reviewed_at: "2026-04-28"
+  reviewed_at: "2026-05-01"
   reviewer: os8ai/curators
-  risk: low
+  # Risk: medium (advisory). Wide dependency surface (~700 transitive
+  # deps; includes Sentry, Convex, Tauri infra, deck.gl, ML tensors).
+  # npm audit reports a handful of high-severity vulns in production
+  # deps. Frontend behavior matches manifest (outbound network true).
+  # End-to-end install + render verified on Linux/aarch64 2026-05-01;
+  # see phase-3-plan.md §7 PR 3.5.1 for the smoke checklist.
+  risk: medium
