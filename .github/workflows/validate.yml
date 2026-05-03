@@ -24,7 +24,13 @@ concurrency:
 
 jobs:
   schema:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      # Phase 4 PR 4.8 — Windows promoted to gating. fail-fast off so a
+      # platform-specific failure surfaces all OSes' diagnostics.
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, windows-2022]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -48,6 +54,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: validation-report
+          name: validation-report-${{ matrix.os }}
           path: validation-report.json
           if-no-files-found: ignore
